@@ -1,0 +1,26 @@
+{
+    "name": "expressly/prestashop16",
+    "description": "Expressly PrestaShop 1.6 Module",
+    "type": "module",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Sam Pratt",
+            "email": "sam@buyexpressly.com"
+        }
+    ],
+    "require": {
+        "expressly/php-common": "dev-master"
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/expressly/php-common"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Module\\Expressly\\": "lib/"
+        }
+    }
+}
