@@ -15,7 +15,7 @@ class WC_Expressly_MerchantProvider implements Expressly\Provider\MerchantProvid
      */
     public function __construct()
     {
-        if (get_option('woocommerce_expressly_destination')) {
+        if (get_option('wc_expressly_destination')) {
             $this->updateMerchant();
         }
     }
@@ -27,11 +27,11 @@ class WC_Expressly_MerchantProvider implements Expressly\Provider\MerchantProvid
     {
         $merchant = new Expressly\Entity\Merchant();
         $merchant
-            ->setDestination(get_option('woocommerce_expressly_destination'))
-            ->setHost(get_option('woocommerce_expressly_host'))
-            ->setOffer(get_option('woocommerce_expressly_offer'))
-            ->setPassword(get_option('woocommerce_expressly_password'))
-            ->setPath(get_option('woocommerce_expressly_path'));
+            ->setDestination(get_option('wc_expressly_destination'))
+            ->setHost(get_option('wc_expressly_host'))
+            ->setOffer(get_option('wc_expressly_offer'))
+            ->setPassword(get_option('wc_expressly_password'))
+            ->setPath(get_option('wc_expressly_path'));
 
         $this->merchant = $merchant;
     }
