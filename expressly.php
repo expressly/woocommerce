@@ -66,6 +66,8 @@ if ( ! class_exists( 'WC_Expressly' ) ) :
             add_rewrite_rule('^expressly/api/user/(.*)/?',    'index.php?__xly=customer/show&email=$matches[1]',   'top');
             add_rewrite_rule('^expressly/api/(.*)/migrate/?', 'index.php?__xly=customer/migrate&uuid=$matches[1]', 'top');
             add_rewrite_rule('^expressly/api/(.*)/?',         'index.php?__xly=customer/popup&uuid=$matches[1]',   'top');
+
+            flush_rewrite_rules();
         }
 
         /**
@@ -335,27 +337,14 @@ if ( ! class_exists( 'WC_Expressly' ) ) :
             $merchant = $this->app['merchant.provider']->getMerchant();
             $event = new Expressly\Event\CustomerMigrateEvent($merchant, $uuid);
 
-            echo $this->dispatcher->dispatch('customer.migrate.start', $event)->getResponse();
-            echo '<script type="text/javascript">
-                            (function () {
-                                window.popupContinue = function () {
-                                    var host = window.location.origin,
-                    parameters = window.location.search,
-                    uuid;
+            $popup = $this->dispatcher->dispatch('customer.migrate.start', $event)->getResponse();
 
-                parameters = parameters.split("&");
+            wp_enqueue_script( 'woocommerce_expressly', plugins_url( 'assets/js/popupbox.js', __FILE__ ) );
+            wp_localize_script( 'woocommerce_expressly', 'XLY', array(
+                'uuid' => $uuid,
+            ) );
 
-                for (var parameter in parameters) {
-                                        if (parameters[parameter].indexOf("uuid") != -1) {
-                                            uuid = parameters[parameter].split("=")[1];
-                    }
-                }
-
-                window.location.replace(host + "/expressly/api/'.$uuid.'/migrate/");
-            };
-                            })();
-    </script>';
-            exit();
+            add_action('wp_footer', function() use ($popup) { echo $popup; });
         }
 
         /**
@@ -386,7 +375,6 @@ if ( ! class_exists( 'WC_Expressly' ) ) :
                 if ($user) {
 
                     echo '<pre>';
-                    var_dump($user); die();
 
                     $customer = new Expressly\Entity\Customer();
                     $customer
@@ -400,64 +388,44 @@ if ( ! class_exists( 'WC_Expressly' ) ) :
 
                     $customer->addEmail($email);
 
+                    $user_id  =& $user->ID;
+                    $first    = true;
+                    $prefixes = ['billing', 'shipping'];
 
-/*
- *
-                    $first = true;
-                    $context = ContextCore::getContext();
+                    $countryCodeProvider = $this->app['country_code.provider'];
 
-                    foreach ($psCustomer->getAddresses($context->language->id) as $psAddress) {
-                        $address = new Address();
+                    foreach ($prefixes as $prefix) {
+
+                        $address = new Expressly\Entity\Address();
                         $address
-                            ->setFirstName($psAddress['firstname'])
-                            ->setLastName($psAddress['lastname'])
-                            ->setAddress1($psAddress['address1'])
-                            ->setAddress2($psAddress['address2'])
-                            ->setCity($psAddress['city'])
-                            ->setCompanyName($psAddress['company'])
-                            ->setZip($psAddress['postcode'])
-                            ->setAlias($psAddress['alias']);
+                            ->setFirstName(get_user_meta($user_id, $prefix . '_first_name', true ) )
+                            ->setLastName(get_user_meta($user_id, $prefix . '_last_name', true ) )
+                            ->setAddress1(get_user_meta($user_id, $prefix . '_address_1', true ) )
+                            ->setAddress2(get_user_meta($user_id, $prefix . '_address_2', true ) )
+                            ->setCity(get_user_meta($user_id, $prefix . '_city', true ) )
+                            ->setZip(get_user_meta($user_id, $prefix . '_postcode', true ) );
 
-                        $psCountry = new CountryCore($psAddress['id_country']);
-                        $address->setCountry($psCountry->iso_code);
+                        $iso3 = $countryCodeProvider->getIso3(get_user_meta($user_id, $prefix . '_country', true ) );
+                        $address->setCountry($iso3);
+                        $address->setStateProvince(get_user_meta($user_id, $prefix . '_state', true ) );
 
-                        /
-                         * PrestaShop uses the country prefix from the address, which is logically incorrect.
-                         * An address may be in the UK, but the owner may have a DE number, this cannot be handled at current time.
-                         * TODO: Find a way that actually works, will require an expressly table to relate customers, phones, and prefix
-                         /
-                        if (!empty($psAddress['phone'])) {
-                            $phone = new Phone();
+                        $phoneNumber = get_user_meta($user_id, $prefix . '_phone', true );
+
+                        if (!empty($phoneNumber)) {
+                            $phone = new Expressly\Entity\Phone();
                             $phone
-                                ->setType(Phone::PHONE_TYPE_HOME)
-                                ->setNumber((string)$psAddress['phone'])
-                                ->setCountryCode((int)$psCountry->call_prefix);
+                                ->setType(Expressly\Entity\Phone::PHONE_TYPE_HOME)
+                                ->setNumber((string)$phoneNumber);
 
                             $customer->addPhone($phone);
-
-                            if (empty($psAddress['phone_mobile'])) {
-                                $address->setPhonePosition($customer->getPhoneIndex($phone));
-                            }
                         }
 
-                        if (!empty($psAddress['phone_mobile'])) {
-                            $phone = new Phone();
-                            $phone
-                                ->setType(Phone::PHONE_TYPE_MOBILE)
-                                ->setNumber((string)$psAddress['phone_mobile'])
-                                ->setCountryCode((int)$psCountry->call_prefix);
-
-                            $customer->addPhone($phone);
-
-                            if (empty($psAddress['phone'])) {
-                                $address->setPhonePosition($customer->getPhoneIndex($phone));
-                            }
-                        }
-
-                        $customer->addAddress($address, $first, Address::ADDRESS_BOTH);
+                        $customer->addAddress($address, $first,
+                            ('billing' == $prefix) ? Expressly\Entity\Address::ADDRESS_BILLING : Expressly\Entity\Address::ADDRESS_SHIPPING
+                        );
                         $first = false;
                     }
-*/
+
                     $merchant = $this->app['merchant.provider']->getMerchant();
                     $response = new Expressly\Presenter\CustomerMigratePresenter($merchant, $customer, $emailAddr, $user->ID);
 
@@ -483,8 +451,6 @@ if ( ! class_exists( 'WC_Expressly' ) ) :
             update_option( 'wc_expressly_password',    Expressly\Entity\Merchant::createPassword() );
             update_option( 'wc_expressly_path',        'index.php' );
 
-            flush_rewrite_rules();
-
             // TODO: Have error here "HTTP Status 400 - Required String parameter 'newPass' is not present"
             // $merchant = $this->app['merchant.provider']->getMerchant(true);
             // var_dump($this->dispatcher->dispatch('merchant.register', new Expressly\Event\MerchantEvent($merchant))); die();
@@ -499,8 +465,6 @@ if ( ! class_exists( 'WC_Expressly' ) ) :
             $merchant = $this->app['merchant.provider']->getMerchant();
             $this->dispatcher->dispatch('merchant.delete', new Expressly\Event\MerchantEvent($merchant));
             */
-
-            flush_rewrite_rules();
 
             delete_option( 'wc_expressly_host' );
             delete_option( 'wc_expressly_destination' );
