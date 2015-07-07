@@ -115,29 +115,37 @@ if (!class_exists('WC_Expressly')) {
          * @uses woocommerce_update_options()
          * @uses self::get_settings()
          */
-        public static function woocommerce_update_options_expressly()
+        public function woocommerce_update_options_expressly()
         {
             $settings = self::get_settings();
             unset($settings['password']);
             woocommerce_update_options($settings);
 
-            $client = new Expressly\Client(MerchantType::WOOCOMMERCE);
-            $app = $client->getApp();
-
-            $app['merchant.provider'] = $app->share(function () {
-                return new WC_Expressly_MerchantProvider();
-            });
-
-            $merchant = $app['merchant.provider']->getMerchant();
+            $merchant = $this->merchantProvider->getMerchant(true);
             $event = new PasswordedEvent($merchant);
 
             try {
-                $app['dispatcher']->dispatch('merchant.update', $event);
-                if (!$event->isSuccessful()) {
-                    throw new GenericException($event->getContent());
+                $uuid = $merchant->getUuid();
+                if (empty($uuid)) {
+                    $this->app['dispatcher']->dispatch('merchant.register', $event);
+                } else {
+                    $this->app['dispatcher']->dispatch('merchant.update', $event);
                 }
+
+                if (!$event->isSuccessful()) {
+                    throw new GenericException($this->error_formatter($event));
+                }
+
+                $content = $event->getContent();
+                if (empty($uuid)) {
+                    $merchant
+                        ->setUuid($content['merchantUuid'])
+                        ->setPassword($content['secretKey']);
+                }
+
+                $this->merchantProvider->setMerchant($merchant);
             } catch (\Exception $e) {
-                $app['logger']->error(ExceptionFormatter::format($e));
+                $this->app['logger']->error(ExceptionFormatter::format($e));
             }
         }
 
@@ -191,14 +199,14 @@ if (!class_exists('WC_Expressly')) {
                 'password' => array(
                     'name' => __('Password', 'wc_expressly'),
                     'type' => 'text',
-                    'desc' => __('Password for your store', 'wc_expressly'),
+                    'desc' => __('Password for your store. If your password field is blank, please press Save changes to register, and retrieve your password.', 'wc_expressly'),
                     'id' => 'wc_expressly_password',
                     'css' => 'width:100%;'
                 ),
                 'section_end' => array(
                     'type' => 'sectionend',
-                    'id' => 'wc_expressly_section_end',
-                ),
+                    'id' => 'wc_expressly_section_end'
+                )
             );
 
             return $settings;
@@ -599,28 +607,6 @@ if (!class_exists('WC_Expressly')) {
             update_option(WC_Expressly_MerchantProvider::IMAGE, 'http://buyexpressly.com/img/logo4.png');
             update_option(WC_Expressly_MerchantProvider::POLICY, $url);
             update_option(WC_Expressly_MerchantProvider::TERMS, $url);
-
-            $merchant = $this->merchantProvider->getMerchant(true);
-            $event = new PasswordedEvent($merchant);
-            $this->dispatcher->dispatch('merchant.register', $event);
-
-            try {
-                if (!$event->isSuccessful()) {
-                    throw new GenericException($this->error_formatter($event));
-                }
-
-                $content = $event->getContent();
-                $merchant
-                    ->setUuid($content['merchantUuid'])
-                    ->setPassword($content['secretKey']);
-
-                $this->merchantProvider->setMerchant($merchant);
-            } catch (GenericException $e) {
-                $this->app['logger']->error(ExceptionFormatter::format($e));
-
-                echo (string)$e->getMessage();
-                exit;
-            }
         }
 
         public function register_deactivation_hook()
