@@ -33,19 +33,10 @@ if (!class_exists('WC_Expressly')) {
 
     class WC_Expressly
     {
-        /**
-         * @var Silex\Application
-         */
         public $app;
-
-        /**
-         * @var Symfony\Component\EventDispatcher\EventDispatcher
-         */
         public $dispatcher;
+        public $merchantProvider;
 
-        /**
-         * Construct the plugin.
-         */
         public function __construct()
         {
             register_activation_hook(__FILE__, array($this, 'register_activation_hook'));
@@ -129,6 +120,25 @@ if (!class_exists('WC_Expressly')) {
             $settings = self::get_settings();
             unset($settings['password']);
             woocommerce_update_options($settings);
+
+            $client = new Expressly\Client(MerchantType::WOOCOMMERCE);
+            $app = $client->getApp();
+
+            $app['merchant.provider'] = $app->share(function () {
+                return new WC_Expressly_MerchantProvider();
+            });
+
+            $merchant = $app['merchant.provider']->getMerchant();
+            $event = new PasswordedEvent($merchant);
+
+            try {
+                $app['dispatcher']->dispatch('merchant.update', $event);
+                if (!$event->isSuccessful()) {
+                    throw new GenericException($event->getContent());
+                }
+            } catch (\Exception $e) {
+                $app['logger']->error(ExceptionFormatter::format($e));
+            }
         }
 
         /**
