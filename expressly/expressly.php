@@ -599,7 +599,7 @@ if (!class_exists('WC_Expressly')) {
 
             $url = get_option('siteurl');
             update_option(WC_Expressly_MerchantProvider::HOST, $url);
-            update_option(WC_Expressly_MerchantProvider::PATH, '/index.php');
+            update_option(WC_Expressly_MerchantProvider::PATH, '/');
             update_option(WC_Expressly_MerchantProvider::DESTINATION, '/');
             update_option(WC_Expressly_MerchantProvider::OFFER, true);
             update_option(WC_Expressly_MerchantProvider::PASSWORD, '');
