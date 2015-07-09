@@ -91,7 +91,7 @@ if (!class_exists('WC_Expressly')) {
          * @param array $settings_tabs Array of WooCommerce setting tabs & their labels, excluding the Subscription tab.
          * @return array $settings_tabs Array of WooCommerce setting tabs & their labels, including the Subscription tab.
          */
-        public static function woocommerce_settings_tabs_array($settings_tabs)
+        public function woocommerce_settings_tabs_array($settings_tabs)
         {
             $settings_tabs['expressly'] = __('Expressly', 'woocommerce');
 
@@ -104,9 +104,9 @@ if (!class_exists('WC_Expressly')) {
          * @uses woocommerce_admin_fields()
          * @uses self::get_settings()
          */
-        public static function woocommerce_settings_tabs_expressly()
+        public function woocommerce_settings_tabs_expressly()
         {
-            woocommerce_admin_fields(self::get_settings());
+            woocommerce_admin_fields($this->get_settings());
         }
 
         /**
@@ -117,7 +117,7 @@ if (!class_exists('WC_Expressly')) {
          */
         public function woocommerce_update_options_expressly()
         {
-            $settings = self::get_settings();
+            $settings = $this->get_settings();
             unset($settings['password']);
             woocommerce_update_options($settings);
 
@@ -146,6 +146,12 @@ if (!class_exists('WC_Expressly')) {
                 $this->merchantProvider->setMerchant($merchant);
             } catch (\Exception $e) {
                 $this->app['logger']->error(ExceptionFormatter::format($e));
+
+               /*
+                * Duplicated core code from formatting.php
+                * Cannot use  WC_Admin_Settings::add_error($e->getMessage()); as it escapes the HTML surrounding the error message
+                */
+                echo sprintf('<div id="message" class="error fade"><p><strong>%s</strong></p></div>', $e->getMessage());
             }
         }
 
@@ -154,7 +160,7 @@ if (!class_exists('WC_Expressly')) {
          *
          * @return array Array of settings for @see woocommerce_admin_fields() function.
          */
-        public static function get_settings()
+        public function get_settings()
         {
             $settings = array(
                 'section_title' => array(
@@ -208,6 +214,21 @@ if (!class_exists('WC_Expressly')) {
                     'id' => 'wc_expressly_section_end'
                 )
             );
+
+            $merchant = $this->merchantProvider->getMerchant();
+            $uuid = $merchant->getUuid();
+            $password = $merchant->getPassword();
+
+            if (empty($uuid) && empty($password)) {
+                return array(
+                    'section_title' => array(
+                        'name' => __('Expressly', 'wc_expressly'),
+                        'type' => 'title',
+                        'desc' => __('Before you start using Expressly, please register the plugin by first pressing the save button below.', 'wc_expressly'),
+                        'id' => 'wc_expressly_section_title',
+                    ),
+                );
+            }
 
             return $settings;
         }
