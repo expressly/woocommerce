@@ -1,7 +1,7 @@
 === Expressly  ===
 Contributors: Expressly
 Tags: woocommerce, user acquisition
-Requires at least: 3.8
+Requires at least: 4.0
 Tested up to: 4.2.2
 Stable tag: 4.2.2
 License: GPLv2 or later
