@@ -1,5 +1,5 @@
 === Expressly  ===
-Contributors: (this should be a list of wordpress.org userid's)
+Contributors: Expressly
 Tags: woocommerce, user acquisition
 Requires at least: 3.8
 Tested up to: 4.2.2
