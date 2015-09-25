@@ -14,14 +14,19 @@ use Expressly\Entity\Invoice;
 use Expressly\Entity\MerchantType;
 use Expressly\Entity\Order;
 use Expressly\Entity\Phone;
+use Expressly\Event\BannerEvent;
 use Expressly\Event\CustomerMigrateEvent;
 use Expressly\Event\PasswordedEvent;
 use Expressly\Exception\ExceptionFormatter;
 use Expressly\Exception\GenericException;
+use Expressly\Helper\BannerHelper;
 use Expressly\Presenter\BatchCustomerPresenter;
 use Expressly\Presenter\BatchInvoicePresenter;
 use Expressly\Presenter\CustomerMigratePresenter;
 use Expressly\Presenter\PingPresenter;
+use Expressly\Subscriber\BannerSubscriber;
+use Expressly\Subscriber\CustomerMigrationSubscriber;
+use Expressly\Subscriber\MerchantSubscriber;
 
 if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
@@ -85,8 +90,16 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
             {
                 add_filter('woocommerce_settings_tabs_array', array($this, 'woocommerce_settings_tabs_array'), 50);
                 add_action('woocommerce_settings_tabs_expressly', array($this, 'woocommerce_settings_tabs_expressly'));
-                add_action('woocommerce_update_options_expressly',
-                    array($this, 'woocommerce_update_options_expressly'));
+                add_action(
+                    'woocommerce_update_options_expressly',
+                    array($this, 'woocommerce_update_options_expressly'),
+                    10
+                );
+                add_action('woocommerce_thankyou', function ($orderId) {
+                    woocommerce_order_details_table($orderId);
+                    $this->banner();
+                }, 10);
+                add_action('expressly_banner', array($this, 'banner'), 10);
             }
 
             /**
@@ -131,9 +144,9 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 try {
                     $uuid = $merchant->getUuid();
                     if (empty($uuid)) {
-                        $this->app['dispatcher']->dispatch('merchant.register', $event);
+                        $this->app['dispatcher']->dispatch(MerchantSubscriber::MERCHANT_REGISTER, $event);
                     } else {
-                        $this->app['dispatcher']->dispatch('merchant.update', $event);
+                        $this->app['dispatcher']->dispatch(MerchantSubscriber::MERCHANT_UPDATE, $event);
                     }
 
                     if (!$event->isSuccessful()) {
@@ -155,8 +168,10 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                      * Duplicated core code from formatting.php
                      * Cannot use  WC_Admin_Settings::add_error($e->getMessage()); as it escapes the HTML surrounding the error message
                      */
-                    echo sprintf('<div id="message" class="error fade"><p><strong>%s</strong></p></div>',
-                        $e->getMessage());
+                    echo sprintf(
+                        '<div id="message" class="error fade"><p><strong>%s</strong></p></div>',
+                        $e->getMessage()
+                    );
                 }
             }
 
@@ -276,6 +291,26 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 }
             }
 
+            public function banner()
+            {
+                $merchant = $this->app['merchant.provider']->getMerchant();
+                $user = wp_get_current_user();
+                $email = $user->user_email;
+                $event = new BannerEvent($merchant, $email);
+
+                try {
+                    $this->dispatcher->dispatch(BannerSubscriber::BANNER_REQUEST, $event);
+
+                    if (!$event->isSuccessful()) {
+                        throw new GenericException($this->error_formatter($event));
+                    }
+                } catch (GenericException $e) {
+                    $this->app['logger']->error($e);
+                }
+
+                echo BannerHelper::toHtml($event);
+            }
+
             private function batchInvoice()
             {
                 $json = file_get_contents('php://input');
@@ -386,7 +421,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 $event = new Expressly\Event\CustomerMigrateEvent($merchant, $uuid);
 
                 try {
-                    $this->dispatcher->dispatch('customer.migrate.data', $event);
+                    $this->dispatcher->dispatch(CustomerMigrationSubscriber::CUSTOMER_MIGRATE_DATA, $event);
 
                     $json = $event->getContent();
                     if (!$event->isSuccessful()) {
@@ -476,7 +511,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                         }
                     }
 
-                    $this->dispatcher->dispatch('customer.migrate.success', $event);
+                    $this->dispatcher->dispatch(CustomerMigrationSubscriber::CUSTOMER_MIGRATE_SUCCESS, $event);
                 } catch (\Exception $e) {
                     $this->app['logger']->error(ExceptionFormatter::format($e));
                 }
@@ -496,7 +531,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 $event = new CustomerMigrateEvent($merchant, $uuid);
 
                 try {
-                    $this->dispatcher->dispatch('customer.migrate.popup', $event);
+                    $this->dispatcher->dispatch(CustomerMigrationSubscriber::CUSTOMER_MIGRATE_POPUP, $event);
 
                     if (!$event->isSuccessful()) {
                         throw new GenericException($this->error_formatter($event));
@@ -643,7 +678,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
                 try {
                     $event = new PasswordedEvent($merchant);
-                    $this->dispatcher->dispatch('merchant.delete', $event);
+                    $this->dispatcher->dispatch(MerchantSubscriber::MERCHANT_DELETE, $event);
                 } catch (\Exception $e) {
                     $this->app['logger']->error(ExceptionFormatter::format($e));
                 }
