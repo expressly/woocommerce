@@ -34,5 +34,9 @@ If you have any questions, or problems please email info@buyexpressly.com
 
 == Changelog ==
 
+= 0.2.0 =
+Added banner functionality
+Dispatchable events are now defined as static constants
+
 = 0.1.1 =
 Initial Expressly WooCommerce stable version

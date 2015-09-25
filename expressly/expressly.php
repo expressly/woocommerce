@@ -2,9 +2,8 @@
 
 /**
  * Plugin Name: Expressly for WooCommerce
- * Description: ...
- * Version: 0.1.0
- * Author: Expressly Team
+ * Version: 0.2.0
+ * Author: Expressly
  */
 
 use Expressly\Entity\Address;
