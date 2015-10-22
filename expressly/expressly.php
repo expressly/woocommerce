@@ -2,7 +2,7 @@
 
 /**
  * Plugin Name: Expressly for WooCommerce
- * Version: 0.2.0
+ * Version: 0.3.0
  * Author: Expressly
  */
 
@@ -18,6 +18,8 @@ use Expressly\Event\CustomerMigrateEvent;
 use Expressly\Event\PasswordedEvent;
 use Expressly\Exception\ExceptionFormatter;
 use Expressly\Exception\GenericException;
+use Expressly\Exception\InvalidAPIKeyException;
+use Expressly\Exception\UserExistsException;
 use Expressly\Helper\BannerHelper;
 use Expressly\Presenter\BatchCustomerPresenter;
 use Expressly\Presenter\BatchInvoicePresenter;
@@ -70,16 +72,16 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
             public function init()
             {
                 // add a rewrite rules.
-                add_rewrite_rule('^expressly/api/ping/?', 'index.php?__xly=utility/ping', 'top');
-                add_rewrite_rule('^expressly/api/batch/invoice/?', 'index.php?__xly=batch/invoice', 'top');
-                add_rewrite_rule('^expressly/api/batch/customer?', 'index.php?__xly=batch/customer', 'top');
-                add_rewrite_rule('^expressly/api/user/(.*)/?', 'index.php?__xly=customer/show&email=$matches[1]',
+                add_rewrite_rule('^expressly/api/ping/?', 'index.php?expressly=/expressly/api/ping', 'top');
+                add_rewrite_rule('^expressly/api/batch/invoice/?', 'index.php?expressly=/expressly/api/batch/invoice',
                     'top');
-                add_rewrite_rule('^expressly/api/(.*)/migrate/?', 'index.php?__xly=customer/migrate&uuid=$matches[1]',
+                add_rewrite_rule('^expressly/api/batch/customer?', 'index.php?expressly=/expressly/api/batch/customer',
                     'top');
-                add_rewrite_rule('^expressly/api/(.*)/?', 'index.php?__xly=customer/popup&uuid=$matches[1]', 'top');
-
-                flush_rewrite_rules();
+                add_rewrite_rule('^expressly/api/user/(.*)/?', 'index.php?expressly=/expressly/api/user/$matches[1]',
+                    'top');
+                add_rewrite_rule('^expressly/api/(.*)/migrate/?', 'index.php?expressly=/expressly/api/$matches[1]/migrate',
+                    'top');
+                add_rewrite_rule('^expressly/api/(.*)/?', 'index.php?expressly=/expressly/api/$matches[1]', 'top');
             }
 
             /**
@@ -87,18 +89,30 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
              */
             public function plugins_loaded()
             {
-                add_filter('woocommerce_settings_tabs_array', array($this, 'woocommerce_settings_tabs_array'), 50);
-                add_action('woocommerce_settings_tabs_expressly', array($this, 'woocommerce_settings_tabs_expressly'));
+                add_filter(
+                    'woocommerce_settings_tabs_array',
+                    array($this, 'woocommerce_settings_tabs_array'),
+                    50
+                );
+                add_action(
+                    'woocommerce_settings_tabs_expressly',
+                    array($this, 'woocommerce_settings_tabs_expressly')
+                );
                 add_action(
                     'woocommerce_update_options_expressly',
                     array($this, 'woocommerce_update_options_expressly'),
                     10
                 );
-                add_action('woocommerce_thankyou', function ($orderId) {
+                $self = $this;
+                add_action('woocommerce_thankyou', function ($orderId) use ($self) {
                     woocommerce_order_details_table($orderId);
-                    $this->banner();
+                    $self->banner();
                 }, 10);
-                add_action('expressly_banner', array($this, 'banner'), 10);
+                add_action(
+                    'expressly_banner',
+                    array($this, 'banner'),
+                    10
+                );
             }
 
             /**
@@ -134,32 +148,17 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
             public function woocommerce_update_options_expressly()
             {
                 $settings = $this->get_settings();
-                unset($settings['password']);
                 woocommerce_update_options($settings);
 
                 $merchant = $this->merchantProvider->getMerchant(true);
                 $event = new PasswordedEvent($merchant);
 
                 try {
-                    $uuid = $merchant->getUuid();
-                    if (empty($uuid)) {
-                        $this->app['dispatcher']->dispatch(MerchantSubscriber::MERCHANT_REGISTER, $event);
-                    } else {
-                        $this->app['dispatcher']->dispatch(MerchantSubscriber::MERCHANT_UPDATE, $event);
-                    }
+                    $this->app['dispatcher']->dispatch(MerchantSubscriber::MERCHANT_REGISTER, $event);
 
                     if (!$event->isSuccessful()) {
-                        throw new GenericException($this->error_formatter($event));
+                        throw new InvalidAPIKeyException($this->error_formatter($event));
                     }
-
-                    $content = $event->getContent();
-                    if (empty($uuid)) {
-                        $merchant
-                            ->setUuid($content['merchantUuid'])
-                            ->setPassword($content['secretKey']);
-                    }
-
-                    $this->merchantProvider->setMerchant($merchant);
                 } catch (\Exception $e) {
                     $this->app['logger']->error(ExceptionFormatter::format($e));
 
@@ -174,11 +173,6 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 }
             }
 
-            /**
-             * Get all the settings for this plugin for @see woocommerce_admin_fields() function.
-             *
-             * @return array Array of settings for @see woocommerce_admin_fields() function.
-             */
             public function get_settings()
             {
                 $settings = array(
@@ -188,45 +182,14 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                         'desc' => __('Provide settings for Expressly integration', 'wc_expressly'),
                         'id' => 'wc_expressly_section_title',
                     ),
-//                'destination' => array(
-//                    'name' => __('Destination', 'wc_expressly'),
-//                    'type' => 'text',
-//                    'desc' => __('Redirect destination after checkout', 'wc_expressly'),
-//                    'id' => 'wc_expressly_destination',
-//                ),
-//                'offer' => array(
-//                    'name' => __('Offer', 'wc_expressly'),
-//                    'type' => 'checkbox',
-//                    'desc' => __('Show offers after checkout', 'wc_expressly'),
-//                    'id' => 'wc_expressly_offer',
-//                ),
-                    'image' => array(
-                        'name' => __('Site Image URL', 'wc_expressly'),
-                        'type' => 'text',
-                        'desc' => __('URL for the Logo of your store.', 'wc_expressly'),
-                        'id' => 'wc_expressly_image',
-                        'css' => 'width:100%;'
-                    ),
-                    'terms' => array(
-                        'name' => __('Site Terms URL', 'wc_expressly'),
-                        'type' => 'text',
-                        'desc' => __('Terms & Conditions URL for your store.', 'wc_expressly'),
-                        'id' => 'wc_expressly_terms',
-                        'css' => 'width:100%;'
-                    ),
-                    'policy' => array(
-                        'name' => __('Site Privacy Policy URL', 'wc_expressly'),
-                        'type' => 'text',
-                        'desc' => __('Privacy Policy URL for your store.', 'wc_expressly'),
-                        'id' => 'wc_expressly_policy',
-                        'css' => 'width:100%;'
-                    ),
                     'password' => array(
-                        'name' => __('Password', 'wc_expressly'),
+                        'name' => __('API Key', 'wc_expressly'),
                         'type' => 'text',
-                        'desc' => __('Password for your store. If your password field is blank, please press Save changes to register, and retrieve your password.',
-                            'wc_expressly'),
-                        'id' => 'wc_expressly_password',
+                        'desc' => __(
+                            'API Key provided from our portal https://buyexpressly.com/#/setup. If you do not have an API Key, please follow the previous link for instructions on how to create one.',
+                            'wc_expressly'
+                        ),
+                        'id' => 'wc_expressly_apikey',
                         'css' => 'width:100%;'
                     ),
                     'section_end' => array(
@@ -235,57 +198,41 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     )
                 );
 
-                $merchant = $this->merchantProvider->getMerchant();
-                $uuid = $merchant->getUuid();
-                $password = $merchant->getPassword();
-
-                if (empty($uuid) && empty($password)) {
-                    return array(
-                        'section_title' => array(
-                            'name' => __('Expressly', 'wc_expressly'),
-                            'type' => 'title',
-                            'desc' => __('Before you start using Expressly, please register the plugin by first pressing the save button below.',
-                                'wc_expressly'),
-                            'id' => 'wc_expressly_section_title',
-                        ),
-                    );
-                }
-
                 return $settings;
             }
 
             public function query_vars($vars)
             {
-                $vars[] = "__xly";
-                $vars[] = "email";
-                $vars[] = "uuid";
+                $vars[] = 'expressly';
+                $vars[] = 'email';
+                $vars[] = 'uuid';
 
                 return $vars;
             }
 
             public function template_redirect()
             {
-                // Get Expressly API call
-                $__xly = get_query_var('__xly');
+                $route = get_query_var('expressly');
+                $matches = array();
 
-                switch ($__xly) {
-                    case 'utility/ping':
+                switch ($route) {
+                    case (preg_match('/^\/?expressly\/api\/ping\/?$/', $route) ? true: false):
                         $this->ping();
                         break;
-                    case 'batch/invoice':
+                    case (preg_match('/^\/?expressly\/api\/batch\/invoice\/?$/', $route) ? true : false):
                         $this->batchInvoice();
                         break;
-                    case 'batch/customer':
+                    case (preg_match('/^\/?expressly\/api\/batch\/customer\/?$/', $route) ? true : false):
                         $this->batchCustomer();
                         break;
-                    case 'customer/show':
-                        $this->retrieveUserByEmail(get_query_var('email'));
+                    case (preg_match('/^\/?expressly\/api\/user\/([0-9a-zA-Z\-\_]+\@[0-9a-zA-Z\-\_\.]+)\/?$/', $route, $matches) ? true : false):
+                        $this->retrieveUserByEmail($matches[1]);
                         break;
-                    case 'customer/migrate':
-                        $this->migratecomplete(get_query_var('uuid'));
+                    case (preg_match('/^\/?expressly\/api\/([0-9a-zA-Z\-]+)\/migrate\/?$/', $route) ? true : false):
+                        $this->migratecomplete($matches[1]);
                         break;
-                    case 'customer/popup':
-                        $this->migratestart(get_query_var('uuid'));
+                    case (preg_match('/^\/?expressly\/api\/([0-9a-zA-Z\-]+)\/?$/', $route) ? true : false):
+                        $this->migratestart($matches[1]);
                         break;
                 }
             }
@@ -428,7 +375,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                             $exists = true;
                         }
 
-                        throw new GenericException($this->error_formatter($event));
+                        throw new UserExistsException($this->error_formatter($event));
                     }
 
                     $email = $json['migration']['data']['email'];
@@ -659,16 +606,9 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     return;
                 }
 
-                $url = get_option('siteurl');
-                update_option(WC_Expressly_MerchantProvider::HOST, $url);
-                update_option(WC_Expressly_MerchantProvider::PATH, '/');
-                update_option(WC_Expressly_MerchantProvider::DESTINATION, '/');
-                update_option(WC_Expressly_MerchantProvider::OFFER, true);
-                update_option(WC_Expressly_MerchantProvider::PASSWORD, '');
-                update_option(WC_Expressly_MerchantProvider::UUID, '');
-                update_option(WC_Expressly_MerchantProvider::IMAGE, 'http://buyexpressly.com/img/logo4.png');
-                update_option(WC_Expressly_MerchantProvider::POLICY, $url);
-                update_option(WC_Expressly_MerchantProvider::TERMS, $url);
+                update_option(WC_Expressly_MerchantProvider::APIKEY, '');
+                update_option(WC_Expressly_MerchantProvider::HOST, get_option('siteurl'));
+                update_option(WC_Expressly_MerchantProvider::PATH, 'index.php?expressly=');
             }
 
             public function register_deactivation_hook()
@@ -685,15 +625,9 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
             public static function register_uninstall_hook()
             {
+                delete_option(WC_Expressly_MerchantProvider::APIKEY);
                 delete_option(WC_Expressly_MerchantProvider::HOST);
                 delete_option(WC_Expressly_MerchantProvider::PATH);
-                delete_option(WC_Expressly_MerchantProvider::DESTINATION);
-                delete_option(WC_Expressly_MerchantProvider::OFFER);
-                delete_option(WC_Expressly_MerchantProvider::PASSWORD);
-                delete_option(WC_Expressly_MerchantProvider::UUID);
-                delete_option(WC_Expressly_MerchantProvider::IMAGE);
-                delete_option(WC_Expressly_MerchantProvider::TERMS);
-                delete_option(WC_Expressly_MerchantProvider::POLICY);
             }
         }
 
