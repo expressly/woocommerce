@@ -1,6 +1,6 @@
 {
-    "name": "expressly/prestashop16",
-    "description": "Expressly PrestaShop 1.6 Module",
+    "name": "expressly/woocommerce",
+    "description": "Expressly WooCommerce Module",
     "type": "module",
     "license": "MIT",
     "authors": [
@@ -10,7 +10,7 @@
         }
     ],
     "require": {
-        "expressly/php-common": "2.0.2"
+        "expressly/php-common": "2.1.0"
     },
     "repositories": [
         {

@@ -34,6 +34,10 @@ If you have any questions, or problems please email info@buyexpressly.com
 
 == Changelog ==
 
+= 0.4.0 =
+Security fixes
+Support ugly urls (no mod_rewrite)
+
 = 0.3.0 =
 Change registration flow to use generated api keys
 General clean-up

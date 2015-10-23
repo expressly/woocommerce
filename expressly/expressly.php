@@ -2,7 +2,7 @@
 
 /**
  * Plugin Name: Expressly for WooCommerce
- * Version: 0.3.0
+ * Version: 0.4.0
  * Author: Expressly
  */
 
@@ -215,25 +215,28 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 $route = get_query_var('expressly');
                 $matches = array();
 
-                switch ($route) {
-                    case (preg_match('/^\/?expressly\/api\/ping\/?$/', $route) ? true: false):
-                        $this->ping();
-                        break;
-                    case (preg_match('/^\/?expressly\/api\/batch\/invoice\/?$/', $route) ? true : false):
-                        $this->batchInvoice();
-                        break;
-                    case (preg_match('/^\/?expressly\/api\/batch\/customer\/?$/', $route) ? true : false):
-                        $this->batchCustomer();
-                        break;
-                    case (preg_match('/^\/?expressly\/api\/user\/([0-9a-zA-Z\-\_]+\@[0-9a-zA-Z\-\_\.]+)\/?$/', $route, $matches) ? true : false):
-                        $this->retrieveUserByEmail($matches[1]);
-                        break;
-                    case (preg_match('/^\/?expressly\/api\/([0-9a-zA-Z\-]+)\/migrate\/?$/', $route) ? true : false):
-                        $this->migratecomplete($matches[1]);
-                        break;
-                    case (preg_match('/^\/?expressly\/api\/([0-9a-zA-Z\-]+)\/?$/', $route) ? true : false):
-                        $this->migratestart($matches[1]);
-                        break;
+                if (!empty($route)) {
+                    switch ($route) {
+                        case (preg_match('/^\/?expressly\/api\/ping\/?$/', $route) ? true : false):
+                            $this->ping();
+                            break;
+                        case (preg_match('/^\/?expressly\/api\/batch\/invoice\/?$/', $route) ? true : false):
+                            $this->batchInvoice();
+                            break;
+                        case (preg_match('/^\/?expressly\/api\/batch\/customer\/?$/', $route) ? true : false):
+                            $this->batchCustomer();
+                            break;
+                        case (preg_match('/^\/?expressly\/api\/user\/([0-9a-zA-Z\-\_]+\@[0-9a-zA-Z\-\_\.]+)\/?$/',
+                            $route, $matches) ? true : false):
+                            $this->retrieveUserByEmail($matches[1]);
+                            break;
+                        case (preg_match('/^\/?expressly\/api\/([0-9a-zA-Z\-]+)\/migrate\/?$/', $route, $matches) ? true : false):
+                            $this->migratecomplete($matches[1]);
+                            break;
+                        case (preg_match('/^\/?expressly\/api\/([0-9a-zA-Z\-]+)\/?$/', $route, $matches) ? true : false):
+                            $this->migratestart($matches[1]);
+                            break;
+                    }
                 }
             }
 
@@ -267,6 +270,8 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     if (!property_exists($json, 'customers')) {
                         throw new GenericException('Invalid JSON request');
                     }
+
+                    $merchant = $this->app['merchant.provider']->getMerchant();
 
                     foreach ($json->customers as $customer) {
                         if (!property_exists($customer, 'email')) {
@@ -321,12 +326,13 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                             $invoices[] = $invoice;
                         }
                     }
+
+                    $presenter = new BatchInvoicePresenter($merchant, $invoices);
+                    wp_send_json($presenter->toArray());
                 } catch (GenericException $e) {
                     $this->app['logger']->error($e);
+                    wp_send_json(array());
                 }
-
-                $presenter = new BatchInvoicePresenter($invoices);
-                wp_send_json($presenter->toArray());
             }
 
             private function batchCustomer()
@@ -341,18 +347,21 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                         throw new GenericException('Invalid JSON request');
                     }
 
+                    $merchant = $this->app['merchant.provider']->getMerchant();
+
                     foreach ($json->emails as $email) {
                         // user_status is a deprecated column and cannot be depended upon
                         if (email_exists($email)) {
                             $users['existing'][] = $email;
                         }
                     }
+
+                    $presenter = new BatchCustomerPresenter($merchant, $users);
+                    wp_send_json($presenter->toArray());
                 } catch (GenericException $e) {
                     $this->app['logger']->error($e);
+                    wp_send_json(array());
                 }
-
-                $presenter = new BatchCustomerPresenter($users);
-                wp_send_json($presenter->toArray());
             }
 
             private function migratecomplete($uuid)
@@ -563,7 +572,6 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
                         $merchant = $this->app['merchant.provider']->getMerchant();
                         $response = new CustomerMigratePresenter($merchant, $customer, $emailAddr, $user->ID);
-
                         wp_send_json($response->toArray());
                     }
                 } catch (\Exception $e) {
