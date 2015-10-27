@@ -2,7 +2,7 @@
 
 /**
  * Plugin Name: Expressly for WooCommerce
- * Version: 0.4.0
+ * Version: 0.4.1
  * Author: Expressly
  */
 
@@ -616,7 +616,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
                 update_option(WC_Expressly_MerchantProvider::APIKEY, '');
                 update_option(WC_Expressly_MerchantProvider::HOST, get_option('siteurl'));
-                update_option(WC_Expressly_MerchantProvider::PATH, 'index.php?expressly=');
+                update_option(WC_Expressly_MerchantProvider::PATH, '?expressly=');
             }
 
             public function register_deactivation_hook()

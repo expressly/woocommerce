@@ -34,6 +34,9 @@ If you have any questions, or problems please email info@buyexpressly.com
 
 == Changelog ==
 
+= 0.4.1 =
+Changed store base url for plugin registration
+
 = 0.4.0 =
 Security fixes
 Support ugly urls (no mod_rewrite)
