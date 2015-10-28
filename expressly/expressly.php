@@ -13,6 +13,7 @@ use Expressly\Entity\Invoice;
 use Expressly\Entity\MerchantType;
 use Expressly\Entity\Order;
 use Expressly\Entity\Phone;
+use Expressly\Entity\Route;
 use Expressly\Event\BannerEvent;
 use Expressly\Event\CustomerMigrateEvent;
 use Expressly\Event\PasswordedEvent;
@@ -201,27 +202,31 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
             {
                 $query = get_query_var('expressly');
                 $route = $this->app['route.resolver']->process($query);
-                $data = $route->getData();
 
-                switch ($route->getName()) {
-                    case Ping::getName():
-                        $this->ping();
-                        break;
-                    case UserData::getName():
-                        $this->retrieveUserByEmail($data['email']);
-                        break;
-                    case CampaignPopup::getName():
-                        $this->migratestart($data['uuid']);
-                        break;
-                    case CampaignMigration::getName():
-                        $this->migratecomplete($data['uuid']);
-                        break;
-                    case BatchCustomer::getName():
-                        $this->batchCustomer();
-                        break;
-                    case BatchInvoice::getName():
-                        $this->batchInvoice();
-                        break;
+                if ($route instanceof Route) {
+                    switch ($route->getName()) {
+                        case Ping::getName():
+                            $this->ping();
+                            break;
+                        case UserData::getName():
+                            $data = $route->getData();
+                            $this->retrieveUserByEmail($data['email']);
+                            break;
+                        case CampaignPopup::getName():
+                            $data = $route->getData();
+                            $this->migratestart($data['uuid']);
+                            break;
+                        case CampaignMigration::getName():
+                            $data = $route->getData();
+                            $this->migratecomplete($data['uuid']);
+                            break;
+                        case BatchCustomer::getName():
+                            $this->batchCustomer();
+                            break;
+                        case BatchInvoice::getName():
+                            $this->batchInvoice();
+                            break;
+                    }
                 }
             }
 
