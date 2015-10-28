@@ -34,6 +34,9 @@ If you have any questions, or problems please email info@buyexpressly.com
 
 == Changelog ==
 
+= 0.4.2 =
+Integrate new route resolver
+
 = 0.4.1 =
 Changed store base url for plugin registration
 

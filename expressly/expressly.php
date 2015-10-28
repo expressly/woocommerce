@@ -2,7 +2,7 @@
 
 /**
  * Plugin Name: Expressly for WooCommerce
- * Version: 0.4.1
+ * Version: 0.4.2
  * Author: Expressly
  */
 
@@ -25,6 +25,12 @@ use Expressly\Presenter\BatchCustomerPresenter;
 use Expressly\Presenter\BatchInvoicePresenter;
 use Expressly\Presenter\CustomerMigratePresenter;
 use Expressly\Presenter\PingPresenter;
+use Expressly\Route\BatchCustomer;
+use Expressly\Route\BatchInvoice;
+use Expressly\Route\CampaignMigration;
+use Expressly\Route\CampaignPopup;
+use Expressly\Route\Ping;
+use Expressly\Route\UserData;
 use Expressly\Subscriber\BannerSubscriber;
 use Expressly\Subscriber\CustomerMigrationSubscriber;
 use Expressly\Subscriber\MerchantSubscriber;
@@ -52,7 +58,6 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 register_uninstall_hook(__FILE__, array('WC_Expressly', 'register_uninstall_hook'));
 
                 add_action('plugins_loaded', array($this, 'plugins_loaded'));
-                add_action('init', array($this, 'init'));
                 add_action('template_redirect', array($this, 'template_redirect'));
 
                 add_filter('query_vars', array($this, 'query_vars'));
@@ -69,24 +74,6 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 $this->merchantProvider = $this->app['merchant.provider'];
             }
 
-            public function init()
-            {
-                // add a rewrite rules.
-                add_rewrite_rule('^expressly/api/ping/?', 'index.php?expressly=/expressly/api/ping', 'top');
-                add_rewrite_rule('^expressly/api/batch/invoice/?', 'index.php?expressly=/expressly/api/batch/invoice',
-                    'top');
-                add_rewrite_rule('^expressly/api/batch/customer?', 'index.php?expressly=/expressly/api/batch/customer',
-                    'top');
-                add_rewrite_rule('^expressly/api/user/(.*)/?', 'index.php?expressly=/expressly/api/user/$matches[1]',
-                    'top');
-                add_rewrite_rule('^expressly/api/(.*)/migrate/?', 'index.php?expressly=/expressly/api/$matches[1]/migrate',
-                    'top');
-                add_rewrite_rule('^expressly/api/(.*)/?', 'index.php?expressly=/expressly/api/$matches[1]', 'top');
-            }
-
-            /**
-             * Initialize the plugin.
-             */
             public function plugins_loaded()
             {
                 add_filter(
@@ -212,31 +199,29 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
             public function template_redirect()
             {
-                $route = get_query_var('expressly');
-                $matches = array();
+                $query = get_query_var('expressly');
+                $route = $this->app['route.resolver']->process($query);
+                $data = $route->getData();
 
-                if (!empty($route)) {
-                    switch ($route) {
-                        case (preg_match('/^\/?expressly\/api\/ping\/?$/', $route) ? true : false):
-                            $this->ping();
-                            break;
-                        case (preg_match('/^\/?expressly\/api\/batch\/invoice\/?$/', $route) ? true : false):
-                            $this->batchInvoice();
-                            break;
-                        case (preg_match('/^\/?expressly\/api\/batch\/customer\/?$/', $route) ? true : false):
-                            $this->batchCustomer();
-                            break;
-                        case (preg_match('/^\/?expressly\/api\/user\/([0-9a-zA-Z\-\_]+\@[0-9a-zA-Z\-\_\.]+)\/?$/',
-                            $route, $matches) ? true : false):
-                            $this->retrieveUserByEmail($matches[1]);
-                            break;
-                        case (preg_match('/^\/?expressly\/api\/([0-9a-zA-Z\-]+)\/migrate\/?$/', $route, $matches) ? true : false):
-                            $this->migratecomplete($matches[1]);
-                            break;
-                        case (preg_match('/^\/?expressly\/api\/([0-9a-zA-Z\-]+)\/?$/', $route, $matches) ? true : false):
-                            $this->migratestart($matches[1]);
-                            break;
-                    }
+                switch ($route->getName()) {
+                    case Ping::getName():
+                        $this->ping();
+                        break;
+                    case UserData::getName():
+                        $this->retrieveUserByEmail($data['email']);
+                        break;
+                    case CampaignPopup::getName():
+                        $this->migratestart($data['uuid']);
+                        break;
+                    case CampaignMigration::getName():
+                        $this->migratecomplete($data['uuid']);
+                        break;
+                    case BatchCustomer::getName():
+                        $this->batchCustomer();
+                        break;
+                    case BatchInvoice::getName():
+                        $this->batchInvoice();
+                        break;
                 }
             }
 
