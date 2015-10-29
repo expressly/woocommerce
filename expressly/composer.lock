@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "e233653690cfd59004521bdf917c9633",
-    "content-hash": "511b712052ad4c4eddb6dca178309455",
+    "hash": "47a70c1429bd0873faaa248ae0faf1cd",
+    "content-hash": "67367eca6b222d6d536086dc950a70ea",
     "packages": [
         {
             "name": "deralex/yaml-config-service-provider",
@@ -126,16 +126,16 @@
         },
         {
             "name": "expressly/php-common",
-            "version": "2.2.1",
+            "version": "2.2.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/expressly/php-common.git",
-                "reference": "fad7d3f635f5da39c022abfacb44a1bcd2b4f396"
+                "reference": "a09d8e37e85fb28258463f5e08f6f9a175b4f046"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/expressly/php-common/zipball/fad7d3f635f5da39c022abfacb44a1bcd2b4f396",
-                "reference": "fad7d3f635f5da39c022abfacb44a1bcd2b4f396",
+                "url": "https://api.github.com/repos/expressly/php-common/zipball/a09d8e37e85fb28258463f5e08f6f9a175b4f046",
+                "reference": "a09d8e37e85fb28258463f5e08f6f9a175b4f046",
                 "shasum": ""
             },
             "require": {
@@ -169,10 +169,10 @@
             ],
             "description": "Expressly common PHP library",
             "support": {
-                "source": "https://github.com/expressly/php-common/tree/2.2.1",
+                "source": "https://github.com/expressly/php-common/tree/2.2.2",
                 "issues": "https://github.com/expressly/php-common/issues"
             },
-            "time": "2015-10-28 13:33:04"
+            "time": "2015-10-29 10:34:25"
         },
         {
             "name": "kriswallsmith/buzz",
