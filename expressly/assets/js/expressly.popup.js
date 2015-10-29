@@ -5,7 +5,7 @@
         loader.style.display = 'block';
         loader.nextElementSibling.style.display = 'none';
 
-        window.location.replace(window.location.origin + '/expressly/api/' + XLY.uuid + "/migrate");
+        window.location.replace(window.location.origin + '?expressly=/expressly/api/' + XLY.uuid + "/migrate");
     };
 
     popupClose = function (event) {

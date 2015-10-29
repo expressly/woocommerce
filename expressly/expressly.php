@@ -2,7 +2,7 @@
 
 /**
  * Plugin Name: Expressly for WooCommerce
- * Version: 0.4.2
+ * Version: 0.4.3
  * Author: Expressly
  */
 
