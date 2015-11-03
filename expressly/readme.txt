@@ -34,6 +34,9 @@ If you have any questions, or problems please email info@buyexpressly.com
 
 == Changelog ==
 
+= 0.4.4 =
+Integrate additional endpoint to validate registration
+
 = 0.4.3 =
 Change redirect location after user migration
 

@@ -2,7 +2,7 @@
 
 /**
  * Plugin Name: Expressly for WooCommerce
- * Version: 0.4.3
+ * Version: 0.4.4
  * Author: Expressly
  */
 
@@ -26,11 +26,13 @@ use Expressly\Presenter\BatchCustomerPresenter;
 use Expressly\Presenter\BatchInvoicePresenter;
 use Expressly\Presenter\CustomerMigratePresenter;
 use Expressly\Presenter\PingPresenter;
+use Expressly\Presenter\RegisteredPresenter;
 use Expressly\Route\BatchCustomer;
 use Expressly\Route\BatchInvoice;
 use Expressly\Route\CampaignMigration;
 use Expressly\Route\CampaignPopup;
 use Expressly\Route\Ping;
+use Expressly\Route\Registered;
 use Expressly\Route\UserData;
 use Expressly\Subscriber\BannerSubscriber;
 use Expressly\Subscriber\CustomerMigrationSubscriber;
@@ -207,6 +209,9 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     switch ($route->getName()) {
                         case Ping::getName():
                             $this->ping();
+                            break;
+                        case Registered::getName():
+                            $this->registered();
                             break;
                         case UserData::getName():
                             $data = $route->getData();
@@ -498,6 +503,12 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
             private function ping()
             {
                 $presenter = new PingPresenter();
+                wp_send_json($presenter->toArray());
+            }
+
+            private function registered()
+            {
+                $presenter = new RegisteredPresenter();
                 wp_send_json($presenter->toArray());
             }
 
