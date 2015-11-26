@@ -34,6 +34,9 @@ If you have any questions, or problems please email info@buyexpressly.com
 
 == Changelog ==
 
+= 0.4.5 =
+Update composer dependency
+
 = 0.4.4 =
 Integrate additional endpoint to validate registration
 Make link to portal on settings page and actual link
