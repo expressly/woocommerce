@@ -3,3 +3,4 @@ expressly/vendor
 .DS_Store
 *.tar.gz
 *.zip
+composer.lock

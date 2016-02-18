@@ -34,6 +34,9 @@ If you have any questions, or problems please email info@buyexpressly.com
 
 == Changelog ==
 
+= 0.4.6 =
+Update composer dependency
+
 = 0.4.5 =
 Update composer dependency
 

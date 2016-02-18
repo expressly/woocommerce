@@ -13,7 +13,7 @@ class WC_Expressly_MerchantProvider implements MerchantProviderInterface
 
     public function __construct()
     {
-        if (get_option('wc_expressly_destination')) {
+        if (get_option('wc_expressly_host')) {
             $this->updateMerchant();
         }
     }

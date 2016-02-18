@@ -2,7 +2,7 @@
 
 /**
  * Plugin Name: Expressly for WooCommerce
- * Version: 0.4.5
+ * Version: 0.4.6
  * Author: Expressly
  */
 
@@ -68,9 +68,9 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 $client = new Expressly\Client(MerchantType::WOOCOMMERCE);
                 $app = $client->getApp();
 
-                $app['merchant.provider'] = $app->share(function () {
+                $app['merchant.provider'] = function () {
                     return new WC_Expressly_MerchantProvider();
-                });
+                };
 
                 $this->app = $app;
                 $this->dispatcher = $this->app['dispatcher'];
