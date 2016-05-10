@@ -2,7 +2,8 @@
 
 /**
  * Plugin Name: Expressly for WooCommerce
- * Version: 0.4.6
+ * Description: Connect your shop to the Expressly Network
+ * Version: 2.3.5
  * Author: Expressly
  */
 
@@ -176,7 +177,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                         'name' => __('API Key', 'wc_expressly'),
                         'type' => 'text',
                         'desc' => __(
-                            'API Key provided from our <a href="https://buyexpressly.com/#/install#api">portal</a>. If you do not have an API Key, please follow the previous link for instructions on how to create one.',
+                            'API Key provided from our <a href="https://portal.buyexpressly.com">portal</a>. If you do not have an API Key, please follow the previous link for instructions on how to create one.',
                             'wc_expressly'
                         ),
                         'id' => 'wc_expressly_apikey',
