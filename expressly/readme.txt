@@ -34,6 +34,10 @@ If you have any questions, or problems please email info@buyexpressly.com
 
 == Changelog ==
 
+= 2.3.6 =
+Update composer dependency on php-common
+API key is now persistent across version installations
+
 = 2.3.5 =
 Update composer dependency on php-common
 Updated link to portal for API key

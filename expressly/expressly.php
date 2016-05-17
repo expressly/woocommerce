@@ -3,8 +3,9 @@
 /**
  * Plugin Name: Expressly for WooCommerce
  * Description: Connect your shop to the Expressly Network
- * Version: 2.3.5
+ * Version: 2.3.6
  * Author: Expressly
+ * Author URI: https://buyexpressly.com/
  */
 
 use Expressly\Entity\Address;
@@ -65,6 +66,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 add_action('template_redirect', array($this, 'template_redirect'));
 
                 add_filter('query_vars', array($this, 'query_vars'));
+                add_filter( 'plugin_action_links', 'expressly_settings_link', 10, 5);
 
                 $client = new Expressly\Client(MerchantType::WOOCOMMERCE);
                 $app = $client->getApp();
@@ -76,6 +78,25 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 $this->app = $app;
                 $this->dispatcher = $this->app['dispatcher'];
                 $this->merchantProvider = $this->app['merchant.provider'];
+            }
+
+            function expressly_settings_link( $actions, $plugin_file )
+            {
+                static $plugin;
+
+                if (!isset($plugin))
+                    $plugin = plugin_basename(__FILE__);
+
+                if ($plugin == $plugin_file) {
+
+                    $settings = array('settings' => '<a href="admin.php?page=wc-settings&tab=expressly">' . __('Settings', 'General') . '</a>');
+                    $site_link = array('support' => '<a href="https://portal.buyexpressly.com" target="_blank">Support</a>');
+
+                    $actions = array_merge($settings, $actions);
+                    $actions = array_merge($site_link, $actions);
+                }
+
+                return $actions;
             }
 
             public function plugins_loaded()
@@ -616,7 +637,11 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     return;
                 }
 
-                update_option(WC_Expressly_MerchantProvider::APIKEY, '');
+                $apikey = get_option(WC_Expressly_MerchantProvider::APIKEY);
+                if (empty($apikey))
+                {
+                    update_option(WC_Expressly_MerchantProvider::APIKEY, '');
+                }
                 update_option(WC_Expressly_MerchantProvider::HOST, get_option('siteurl'));
                 update_option(WC_Expressly_MerchantProvider::PATH, '?expressly=');
             }
@@ -635,9 +660,6 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
             public static function register_uninstall_hook()
             {
-                delete_option(WC_Expressly_MerchantProvider::APIKEY);
-                delete_option(WC_Expressly_MerchantProvider::HOST);
-                delete_option(WC_Expressly_MerchantProvider::PATH);
             }
         }
 
