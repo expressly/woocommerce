@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Expressly for WooCommerce
  * Description: Connect your shop to the Expressly Network
- * Version: 2.3.7
+ * Version: 2.3.9
  * Author: Expressly
  * Author URI: https://buyexpressly.com/
  */

@@ -34,7 +34,7 @@ If you have any questions, or problems please email info@buyexpressly.com
 
 == Changelog ==
 
-= 2.3.8 =
+= 2.3.9 =
 Removed broken filter
 
 = 2.3.6 =
