@@ -34,6 +34,9 @@ If you have any questions, or problems please email info@buyexpressly.com
 
 == Changelog ==
 
+= 2.3.7 =
+Removed broken filter
+
 = 2.3.6 =
 Update composer dependency on php-common
 API key is now persistent across version installations
