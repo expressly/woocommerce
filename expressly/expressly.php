@@ -214,6 +214,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 $route = $this->app['route.resolver']->process(preg_replace('/.*(expressly\/.*)/i', '/${1}', $_SERVER['REQUEST_URI']));
 
                 if ($route instanceof Route) {
+                    status_header(200);
                     switch ($route->getName()) {
                         case Ping::getName():
                             $this->ping();
