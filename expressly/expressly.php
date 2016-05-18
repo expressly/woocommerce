@@ -66,6 +66,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 add_action('template_redirect', array($this, 'template_redirect'));
 
                 add_filter('query_vars', array($this, 'query_vars'));
+                add_filter('plugin_action_links_' . plugin_basename(__FILE__), array($this, 'plugin_action_links'));
 
                 $client = new Expressly\Client(MerchantType::WOOCOMMERCE);
                 $app = $client->getApp();
@@ -77,6 +78,12 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 $this->app = $app;
                 $this->dispatcher = $this->app['dispatcher'];
                 $this->merchantProvider = $this->app['merchant.provider'];
+            }
+
+            public function plugin_action_links( $links ) {
+                $links[] = '<a href="'. esc_url( get_admin_url(null, 'admin.php?page=wc-settings&tab=expressly') ) .'">Settings</a>';
+                $links[] = '<a href="https://portal.buyexpressly.com/my-account/profile/api" target="_blank">Get API Key</a>';
+                return $links;
             }
 
             public function plugins_loaded()
@@ -205,7 +212,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
             public function template_redirect()
             {
                 $route = $this->app['route.resolver']->process(preg_replace('/.*(expressly\/.*)/i', '/${1}', $_SERVER['REQUEST_URI']));
-                
+
                 if ($route instanceof Route) {
                     switch ($route->getName()) {
                         case Ping::getName():
