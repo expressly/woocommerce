@@ -204,9 +204,8 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
             public function template_redirect()
             {
-                $query = get_query_var('expressly');
-                $route = $this->app['route.resolver']->process($query);
-
+                $route = $this->app['route.resolver']->process(preg_replace('/.*(expressly\/.*)/i', '/${1}', $_SERVER['REQUEST_URI']));
+                
                 if ($route instanceof Route) {
                     switch ($route->getName()) {
                         case Ping::getName():
