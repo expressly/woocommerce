@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Expressly for WooCommerce
  * Description: Connect your shop to the Expressly Network. To get started 1) Click the "Activate" link to the left of this description, 2) <a href="http://portal.buyexpressly.com/">Sign up to Expressly</a> to get an API key, and 3) Click on the "Settings" link to the left of this description, and save your API key.
- * Version: 2.3.9
+ * Version: 2.3.12
  * Author: Expressly
  * Author URI: https://buyexpressly.com/
  */
@@ -211,6 +211,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
             public function template_redirect()
             {
+                $query = get_query_var('expressly');
                 $route = $this->app['route.resolver']->process(preg_replace('/.*(expressly\/.*)/i', '/${1}', $_SERVER['REQUEST_URI']));
 
                 if ($route instanceof Route) {
@@ -331,7 +332,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                         }
                     }
 
-                    $presenter = new BatchInvoicePresenter($merchant, $invoices);
+                    $presenter = new BatchInvoicePresenter($invoices);
                     wp_send_json($presenter->toArray());
                 } catch (GenericException $e) {
                     $this->app['logger']->error($e);
@@ -360,7 +361,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                         }
                     }
 
-                    $presenter = new BatchCustomerPresenter($merchant, $users);
+                    $presenter = new BatchCustomerPresenter($users);
                     wp_send_json($presenter->toArray());
                 } catch (GenericException $e) {
                     $this->app['logger']->error($e);

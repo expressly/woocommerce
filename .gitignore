@@ -1,5 +1,7 @@
 expressly/vendor
 .idea
+*.iml
+/out
 .DS_Store
 *.tar.gz
 *.zip
