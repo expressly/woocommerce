@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Expressly for WooCommerce
  * Description: Connect your shop to the Expressly Network. To get started 1) Click the "Activate" link to the left of this description, 2) <a href="http://portal.buyexpressly.com/">Sign up to Expressly</a> to get an API key, and 3) Click on the "Settings" link to the left of this description, and save your API key.
- * Version: 2.3.12
+ * Version: 2.3.13
  * Author: Expressly
  * Author URI: https://buyexpressly.com/
  */
@@ -305,7 +305,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
                                     foreach ($wpOrder->get_items('line_item') as $lineItem) {
                                         $tax += (double)$lineItem['line_tax'];
-                                        $total += (double)$lineItem['line_total'] - (double)$lineItem['line_tax'];
+                                        $total += (double)$lineItem['line_total'];
                                         $count++;
 
                                         if ($lineItem->tax_class) {
@@ -501,7 +501,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     wp_redirect('/');
                 }
 
-                wp_enqueue_script('woocommerce_expressly', plugins_url('assets/js/expressly.popup.js', __FILE__));
+                //wp_enqueue_script('woocommerce_expressly', plugins_url('assets/js/expressly.popup.js', __FILE__));
                 wp_localize_script('woocommerce_expressly', 'XLY', array('uuid' => $uuid));
 
                 $content = $event->getContent();
