@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Expressly for WooCommerce
  * Description: Connect your shop to the Expressly Network. To get started 1) Click the "Activate" link to the left of this description, 2) <a href="http://portal.buyexpressly.com/">Sign up to Expressly</a> to get an API key, and 3) Click on the "Settings" link to the left of this description, and save your API key.
- * Version: 2.3.13
+ * Version: 2.3.20
  * Author: Expressly
  * Author URI: https://buyexpressly.com/
  */
@@ -16,6 +16,7 @@ use Expressly\Entity\MerchantType;
 use Expressly\Entity\Order;
 use Expressly\Entity\Phone;
 use Expressly\Entity\Route;
+use Expressly\Entity\Social;
 use Expressly\Event\BannerEvent;
 use Expressly\Event\CustomerMigrateEvent;
 use Expressly\Event\PasswordedEvent;
@@ -308,8 +309,8 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                                         $total += (double)$lineItem['line_total'];
                                         $count++;
 
-                                        if ($lineItem->tax_class) {
-                                            $order->setCurrency($lineItem['tax_class']);
+                                        if (get_woocommerce_currency()) {
+                                            $order->setCurrency(get_woocommerce_currency());
                                         }
                                     }
 
@@ -401,12 +402,19 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                         // Generate the password and create the user
                         $password = wp_generate_password(12, false);
                         $user_id = wp_create_user($email, $password, $email);
+                        $website_url = '';
+                        foreach($customer['onlinePresence'] as $item) {
+                            if ($item['field'] == 'website') {
+                                $website_url = $item['value'];
+                            }
+                        }
 
                         wp_update_user(array(
                             'ID' => $user_id,
                             'first_name' => $customer['firstName'],
                             'last_name' => $customer['lastName'],
                             'display_name' => $customer['firstName'] . ' ' . $customer['lastName'],
+                            'user_url' => $website_url,
                         ));
 
                         // Set the role
@@ -426,6 +434,10 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                             }
                             if (!empty($address['address2'])) {
                                 update_user_meta($user_id, $prefix . '_address_2', $address['address2']);
+                            }
+
+                            if (!empty($address['companyName'])) {
+                                update_user_meta($user_id, $prefix . '_company', $address['companyName']);
                             }
 
                             update_user_meta($user_id, $prefix . '_city', $address['city']);
@@ -550,6 +562,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                                 ->setLastName(get_user_meta($user_id, $prefix . '_last_name', true))
                                 ->setAddress1(get_user_meta($user_id, $prefix . '_address_1', true))
                                 ->setAddress2(get_user_meta($user_id, $prefix . '_address_2', true))
+                                ->setCompanyName(get_user_meta($user_id, $prefix . '_company', true))
                                 ->setCity(get_user_meta($user_id, $prefix . '_city', true))
                                 ->setZip(get_user_meta($user_id, $prefix . '_postcode', true));
 
@@ -579,6 +592,13 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                         } else {
                             $customer->addAddress($billingAddress, true, Address::ADDRESS_BILLING);
                             $customer->addAddress($shippingAddress, true, Address::ADDRESS_SHIPPING);
+                        }
+
+                        if ($user->user_url) {
+                            $website = new Social();
+                            $website->setField(Social::SOCIAL_WEBSITE);
+                            $website->setValue($user->user_url);
+                            $customer->addSocial($website);
                         }
 
                         $merchant = $this->app['merchant.provider']->getMerchant();
