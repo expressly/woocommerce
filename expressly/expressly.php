@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Expressly for WooCommerce
  * Description: Connect your shop to the Expressly Network. To get started 1) Click the "Activate" link to the left of this description, 2) <a href="http://portal.buyexpressly.com/">Sign up to Expressly</a> to get an API key, and 3) Click on the "Settings" link to the left of this description, and save your API key.
- * Version: 2.3.20
+ * Version: 2.3.21
  * Author: Expressly
  * Author URI: https://buyexpressly.com/
  */
@@ -45,8 +45,15 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
-// Check if WooCommerce is active
-if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_option('active_plugins')))) {
+if(!function_exists("xly_woocommerce_check")) {
+    function xly_woocommerce_check() {
+        return count(array_filter(apply_filters('active_plugins', get_option('active_plugins')), function($var) {
+            return preg_match('/.+\/woocommerce.php/', $var);
+        })) != 0;
+    }
+}
+
+if (xly_woocommerce_check()) {
     if (!class_exists('WC_Expressly')) {
         require_once 'vendor/autoload.php';
         require_once 'class-wc-expressly-merchantprovider.php';
