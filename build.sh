@@ -45,5 +45,5 @@ rm -rf ${VENDOR_DIR}/symfony/yaml/Symfony/Component/Yaml/Tests
 echo "[Packaging extension]"
 pushd ${DIR}/out/src
 pwd
-zip -r ${DIR}/out/expressly-${1-dev}-woocommerce-2.3-2.4.zip .
+zip -r ${DIR}/out/expressly-${1-dev}-woocommerce-2.3-2.6.zip .
 popd
