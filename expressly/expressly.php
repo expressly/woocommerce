@@ -381,7 +381,7 @@ if (xly_woocommerce_check()) {
             {
                 // get key from url
                 if (empty($uuid)) {
-                    wp_redirect('/');
+                    wp_redirect(home_url());
                 }
 
                 $exists = false;
@@ -501,7 +501,7 @@ if (xly_woocommerce_check()) {
                     return;
                 }
 
-                wp_redirect("/");
+                wp_redirect(home_url());
             }
 
             private function migratestart($uuid)
@@ -517,7 +517,7 @@ if (xly_woocommerce_check()) {
                     }
                 } catch (\Exception $e) {
                     $this->app['logger']->error(ExceptionFormatter::format($e));
-                    wp_redirect('/');
+                    wp_redirect(home_url());
                 }
 
                 //wp_enqueue_script('woocommerce_expressly', plugins_url('assets/js/expressly.popup.js', __FILE__));
