@@ -410,9 +410,11 @@ if (xly_woocommerce_check()) {
                         $password = wp_generate_password(12, false);
                         $user_id = wp_create_user($email, $password, $email);
                         $website_url = '';
-                        foreach($customer['onlinePresence'] as $item) {
-                            if ($item['field'] == 'website') {
-                                $website_url = $item['value'];
+                        if (isset($customer['onlinePresence'])) {
+                            foreach ($customer['onlinePresence'] as $item) {
+                                if ($item['field'] == 'website') {
+                                    $website_url = $item['value'];
+                                }
                             }
                         }
 
