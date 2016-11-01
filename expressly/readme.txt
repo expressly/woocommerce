@@ -34,6 +34,9 @@ If you have any questions, or problems please email info@buyexpressly.com
 
 == Changelog ==
 
+= 2.4.1 =
+Upgraded php-common
+
 = 2.3.9 =
 Removed broken filter
 
