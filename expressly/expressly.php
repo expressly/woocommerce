@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Expressly for WooCommerce
  * Description: Connect your shop to the Expressly Network. To get started 1) Click the "Activate" link to the left of this description, 2) <a href="http://portal.buyexpressly.com/">Sign up to Expressly</a> to get an API key, and 3) Click on the "Settings" link to the left of this description, and save your API key.
- * Version: 2.4.1
+ * Version: 2.4.7
  * Author: Expressly
  * Author URI: https://buyexpressly.com/
  */
@@ -360,12 +360,9 @@ if (xly_woocommerce_check()) {
                         throw new GenericException('Invalid JSON request');
                     }
 
-                    $merchant = $this->app['merchant.provider']->getMerchant();
-
                     foreach ($json->emails as $email) {
-                        // user_status is a deprecated column and cannot be depended upon
                         if (email_exists($email)) {
-                            $users['existing'][] = $email;
+                            $users[] = $email;
                         }
                     }
 
