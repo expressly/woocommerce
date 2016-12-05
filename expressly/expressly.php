@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Expressly for WooCommerce
  * Description: Connect your shop to the Expressly Network. To get started 1) Click the "Activate" link to the left of this description, 2) <a href="http://portal.buyexpressly.com/">Sign up to Expressly</a> to get an API key, and 3) Click on the "Settings" link to the left of this description, and save your API key.
- * Version: 2.4.7
+ * Version: 2.5.0
  * Author: Expressly
  * Author URI: https://buyexpressly.com/
  */
@@ -610,6 +610,8 @@ if (xly_woocommerce_check()) {
                         $merchant = $this->app['merchant.provider']->getMerchant();
                         $response = new CustomerMigratePresenter($merchant, $customer, $emailAddr, $user->ID);
                         wp_send_json($response->toArray());
+                    } else {
+                        status_header(404);
                     }
                 } catch (\Exception $e) {
                     $this->app['logger']->error(ExceptionFormatter::format($e));
