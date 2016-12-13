@@ -522,7 +522,7 @@ if (xly_woocommerce_check()) {
                     }
                 } catch (\Exception $e) {
                     $this->app['logger']->error(ExceptionFormatter::format($e));
-                    wp_redirect(home_url());
+                    wp_redirect('https://prod.expresslyapp.com/api/redirect/migration/' . $uuid . '/failed');
                 }
 
                 //wp_enqueue_script('woocommerce_expressly', plugins_url('assets/js/expressly.popup.js', __FILE__));
