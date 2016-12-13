@@ -503,6 +503,7 @@ if (xly_woocommerce_check()) {
 
                 if ($exists) {
                     wp_enqueue_script('woocommerce_expressly', plugins_url('assets/js/expressly.exists.js', __FILE__));
+                    wp_localize_script('woocommerce_expressly', 'expressly', array('home' => site_url()));
                     return;
                 }
 
@@ -524,9 +525,6 @@ if (xly_woocommerce_check()) {
                     $this->app['logger']->error(ExceptionFormatter::format($e));
                     wp_redirect('https://prod.expresslyapp.com/api/redirect/migration/' . $uuid . '/failed');
                 }
-
-                //wp_enqueue_script('woocommerce_expressly', plugins_url('assets/js/expressly.popup.js', __FILE__));
-                wp_localize_script('woocommerce_expressly', 'XLY', array('uuid' => $uuid));
 
                 $content = $event->getContent();
                 add_action('wp_footer', function () use ($content) {
