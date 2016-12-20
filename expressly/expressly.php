@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Expressly for WooCommerce
  * Description: Connect your shop to the Expressly Network. To get started 1) Click the "Activate" link to the left of this description, 2) <a href="http://portal.buyexpressly.com/">Sign up to Expressly</a> to get an API key, and 3) Click on the "Settings" link to the left of this description, and save your API key.
- * Version: 2.5.2
+ * Version: 2.5.3
  * Author: Expressly
  * Author URI: https://buyexpressly.com/
  */
@@ -111,15 +111,15 @@ if (xly_woocommerce_check()) {
                     10
                 );
                 $self = $this;
-                add_action('woocommerce_thankyou', function ($orderId) use ($self) {
-                    woocommerce_order_details_table($orderId);
-                    $self->banner();
-                }, 10);
-                add_action(
-                    'expressly_banner',
-                    array($this, 'banner'),
-                    10
-                );
+//                add_action('woocommerce_thankyou', function ($orderId) use ($self) {
+//                    woocommerce_order_details_table($orderId);
+//                    $self->banner();
+//                }, 10);
+//                add_action(
+//                    'expressly_banner',
+//                    array($this, 'banner'),
+//                    10
+//                );
             }
 
             /**
