@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Expressly for WooCommerce
  * Description: Connect your shop to the Expressly Network. To get started 1) Click the "Activate" link to the left of this description, 2) <a href="http://portal.buyexpressly.com/">Sign up to Expressly</a> to get an API key, and 3) Click on the "Settings" link to the left of this description, and save your API key.
- * Version: 2.5.3
+ * Version: 2.7.0
  * Author: Expressly
  * Author URI: https://buyexpressly.com/
  */
@@ -72,6 +72,7 @@ if (xly_woocommerce_check()) {
 
                 add_action('plugins_loaded', array($this, 'plugins_loaded'));
                 add_action('template_redirect', array($this, 'template_redirect'));
+                add_action( 'wp_enqueue_scripts', array($this, 'lightbox_trigger') );
 
                 add_filter('query_vars', array($this, 'query_vars'));
                 add_filter('plugin_action_links_' . plugin_basename(__FILE__), array($this, 'plugin_action_links'));
@@ -88,7 +89,13 @@ if (xly_woocommerce_check()) {
                 $this->merchantProvider = $this->app['merchant.provider'];
             }
 
-            public function plugin_action_links( $links ) {
+
+        public function lightbox_trigger() {
+            wp_register_script( 'expressly-trigger', 'https://assets01.buyexpressly.com/lightbox/trigger-v2.js', null, null, true );
+            wp_enqueue_script( 'expressly-trigger');
+        }
+
+        public function plugin_action_links( $links ) {
                 $links[] = '<a href="'. esc_url( get_admin_url(null, 'admin.php?page=wc-settings&tab=expressly') ) .'">Settings</a>';
                 $links[] = '<a href="https://portal.buyexpressly.com/my-account/profile/api" target="_blank">Get API Key</a>';
                 return $links;
@@ -577,7 +584,9 @@ if (xly_woocommerce_check()) {
                                 ->setZip(get_user_meta($user_id, $prefix . '_postcode', true));
 
                             $iso3 = $countryCodeProvider->getIso3(get_user_meta($user_id, $prefix . '_country', true));
-                            $address->setCountry($iso3);
+                            if($iso3 != false) {
+                                $address->setCountry($iso3);
+                            }
                             $address->setStateProvince(get_user_meta($user_id, $prefix . '_state', true));
 
                             $phoneNumber = get_user_meta($user_id, $prefix . '_phone', true);
@@ -598,10 +607,16 @@ if (xly_woocommerce_check()) {
                         $shippingAddress = $createAddress('shipping');
 
                         if (Address::compare($billingAddress, $shippingAddress)) {
-                            $customer->addAddress($billingAddress, true, Address::ADDRESS_BOTH);
+                            if (!empty($billingAddress->getCity())) {
+                                $customer->addAddress($billingAddress, true, Address::ADDRESS_BOTH);
+                            }
                         } else {
-                            $customer->addAddress($billingAddress, true, Address::ADDRESS_BILLING);
-                            $customer->addAddress($shippingAddress, true, Address::ADDRESS_SHIPPING);
+                            if (!empty($billingAddress->getCity())) {
+                                $customer->addAddress($billingAddress, true, Address::ADDRESS_BILLING);
+                            }
+                            if (!empty($shippingAddress->getCity())) {
+                                $customer->addAddress($shippingAddress, true, Address::ADDRESS_SHIPPING);
+                            }
                         }
 
                         if ($user->user_url) {
