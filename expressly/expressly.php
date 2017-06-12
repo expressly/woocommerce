@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Expressly for WooCommerce
  * Description: Connect your shop to the Expressly Network. To get started 1) Click the "Activate" link to the left of this description, 2) <a href="http://portal.buyexpressly.com/">Sign up to Expressly</a> to get an API key, and 3) Click on the "Settings" link to the left of this description, and save your API key.
- * Version: 2.7.0
+ * Version: 2.7.1
  * Author: Expressly
  * Author URI: https://buyexpressly.com/
  */
@@ -60,6 +60,9 @@ if (xly_woocommerce_check()) {
 
         class WC_Expressly
         {
+            const EMAIL_TEMPLATE = 'wc_expressly_email_template';
+            const EMAIL_SUBJECT = 'wc_expressly_email_subject';
+
             public $app;
             public $dispatcher;
             public $merchantProvider;
@@ -205,6 +208,26 @@ if (xly_woocommerce_check()) {
                         ),
                         'id' => 'wc_expressly_apikey',
                         'css' => 'width:100%;'
+                    ),
+                    'email_subject' => array(
+                        'name' => __('Welcome Email Subject', 'wc_expressly'),
+                        'type' => 'text',
+                        'desc' => __(
+                            'Welcome email subject line. You may include the macros {$firstName} and {$lastName}',
+                            'wc_expressly'
+                        ),
+                        'id' => 'wc_expressly_email_subject',
+                        'css' => 'width:100%;'
+                    ),
+                    'email_template' => array(
+                        'name' => __('Welcome Email Template', 'wc_expressly'),
+                        'type' => 'textarea',
+                        'desc' => __(
+                            'Enter the html code for the Welcome email for migrated users. This should include either their password using the macro {$password} or a link to the password reset page.',
+                            'wc_expressly'
+                        ),
+                        'id' => 'wc_expressly_email_template',
+                        'css' => 'width:100%;height:10em;'
                     ),
                     'section_end' => array(
                         'type' => 'sectionend',
@@ -480,7 +503,17 @@ if (xly_woocommerce_check()) {
                         }
 
                         // Dispatch password creation email
-                        wp_mail($email, 'Welcome!', 'Your Password: ' . $password);
+                        //$emailBody = file_get_contents(TEMPLATEPATH . 'includes/email-welcome.php');
+                        $emailVars = array(
+                            '{$password}'   => $password,
+                            '{$firstName}'  => $customer['firstName'],
+                            '{$lastName}'   => $customer['lastName']);
+
+                        wp_mail(
+                            $email,
+                            strtr(get_option(WC_Expressly::EMAIL_SUBJECT), $emailVars),
+                            strtr(get_option(WC_Expressly::EMAIL_TEMPLATE), $emailVars),
+                            array('Content-Type: text/html; charset=UTF-8'));
 
                         // Forcefully log user in
                         wp_set_auth_cookie($user_id);
@@ -679,6 +712,16 @@ if (xly_woocommerce_check()) {
                 }
                 update_option(WC_Expressly_MerchantProvider::HOST, get_option('siteurl'));
                 update_option(WC_Expressly_MerchantProvider::PATH, '?expressly=');
+
+                $emailTemplate = get_option(WC_Expressly::EMAIL_TEMPLATE);
+                if (empty($emailTemplate)) {
+                    update_option(WC_Expressly::EMAIL_TEMPLATE, '<body><span>Your Password is</span> <b>{$password}</b></body>');
+                }
+
+                $emailSubject = get_option(WC_Expressly::EMAIL_SUBJECT);
+                if (empty($emailSubject)) {
+                    update_option(WC_Expressly::EMAIL_SUBJECT, 'Welcome {$firstName}!');
+                }
             }
 
             public function register_deactivation_hook()
