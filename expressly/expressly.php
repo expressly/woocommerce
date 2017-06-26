@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Expressly for WooCommerce
  * Description: Connect your shop to the Expressly Network. To get started 1) Click the "Activate" link to the left of this description, 2) <a href="http://portal.buyexpressly.com/">Sign up to Expressly</a> to get an API key, and 3) Click on the "Settings" link to the left of this description, and save your API key.
- * Version: 2.7.2
+ * Version: 2.7.3
  * Author: Expressly
  * Author URI: https://buyexpressly.com/
  */
@@ -419,6 +419,7 @@ if (xly_woocommerce_check()) {
                 $exists = false;
                 $merchant = $this->app['merchant.provider']->getMerchant();
                 $event = new Expressly\Event\CustomerMigrateEvent($merchant, $uuid);
+                $xlyerror = null;
 
                 try {
                     $this->dispatcher->dispatch(CustomerMigrationSubscriber::CUSTOMER_MIGRATE_DATA, $event);
@@ -539,14 +540,15 @@ if (xly_woocommerce_check()) {
                     }
                 } catch (\Exception $e) {
                     $this->app['logger']->error(ExceptionFormatter::format($e));
+                    $xlyerror = $e->getMessage();
                 }
 
                 if ($exists) {
-                    wp_redirect('https://prod.expresslyapp.com/api/redirect/migration/' . $uuid . '/exists');
+                    wp_redirect('https://prod.expresslyapp.com/api/redirect/migration/' . $uuid . '/exists?loginUrl=' . urlencode(site_url() . '/index.php/my-account/') );
                     return;
                 }
 
-                wp_redirect('https://prod.expresslyapp.com/api/redirect/migration/' . $uuid . '/failed');
+                wp_redirect('https://prod.expresslyapp.com/api/redirect/migration/' . $uuid . '/failed?e=' . urlencode($xlyerror));
             }
 
             private function migratestart($uuid)
@@ -579,7 +581,7 @@ if (xly_woocommerce_check()) {
 
             private function registered()
             {
-                $presenter = new RegisteredPresenter();
+                $presenter = new RegisteredPresenter("WooCommerce", WC()->version);
                 wp_send_json($presenter->toArray());
             }
 
@@ -639,14 +641,14 @@ if (xly_woocommerce_check()) {
                         $shippingAddress = $createAddress('shipping');
 
                         if (Address::compare($billingAddress, $shippingAddress)) {
-                            if (!empty($billingAddress->getCity())) {
+                            if ($billingAddress && $billingAddress->getCity()) {
                                 $customer->addAddress($billingAddress, true, Address::ADDRESS_BOTH);
                             }
                         } else {
-                            if (!empty($billingAddress->getCity())) {
+                            if ($billingAddress && $billingAddress->getCity()) {
                                 $customer->addAddress($billingAddress, true, Address::ADDRESS_BILLING);
                             }
-                            if (!empty($shippingAddress->getCity())) {
+                            if ($billingAddress && $shippingAddress->getCity()) {
                                 $customer->addAddress($shippingAddress, true, Address::ADDRESS_SHIPPING);
                             }
                         }
